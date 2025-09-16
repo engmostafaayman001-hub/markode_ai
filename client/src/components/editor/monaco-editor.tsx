@@ -71,7 +71,6 @@ export default function MonacoEditor({
         enabled: true,
       },
       suggest: {
-        enabled: true,
         showKeywords: true,
         showSnippets: true,
         showFunctions: true,

@@ -3,7 +3,7 @@ import { createServer } from "http";
 import { WebSocketServer } from "ws";
 import { setupAuth } from "./replitAuth";
 import { storage } from "./storage";
-import { insertProjectSchema, insertTemplateSchema, insertCollaboratorSchema, insertAnalyticsSchema } from "@shared/schema";
+import { insertProjectSchema, insertTemplateSchema, insertCollaboratorSchema, insertAnalyticsSchema, type User } from "@shared/schema";
 import OpenAI from "openai";
 
 const client = new OpenAI({
@@ -119,7 +119,22 @@ export async function registerRoutes(app: Express) {
   // Set up authentication
   await setupAuth(app);
 
-  // API Routes for users
+  // API Routes for authentication and users
+  app.get("/api/auth/user", async (req, res) => {
+    try {
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const user = await storage.getUser(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.get("/api/user/:id", async (req, res) => {
     try {
       const user = await storage.getUser(req.params.id);
@@ -216,6 +231,38 @@ export async function registerRoutes(app: Express) {
       res.status(201).json(template);
     } catch (error) {
       res.status(400).json({ message: "Invalid template data" });
+    }
+  });
+
+  // API Routes for analytics
+  app.get("/api/analytics/user", async (req, res) => {
+    try {
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const analytics = await storage.getUserAnalytics(req.user.id);
+      res.json(analytics);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/analytics/project/:id", async (req, res) => {
+    try {
+      const analytics = await storage.getProjectAnalytics(req.params.id);
+      res.json(analytics);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/analytics", async (req, res) => {
+    try {
+      const validatedData = insertAnalyticsSchema.parse(req.body);
+      const analytics = await storage.logAnalyticsEvent(validatedData);
+      res.status(201).json(analytics);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid analytics data" });
     }
   });
 
