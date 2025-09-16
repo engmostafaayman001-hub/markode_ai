@@ -1,4 +1,3 @@
-// vite.config.ts
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
@@ -28,17 +27,20 @@ export default defineConfig(async () => ({
     },
   },
   root: path.resolve(__dirname, "client"),
-  base: "./", // مهم لتجنب مشاكل المسارات في السيرفر
+  base: "./",
   build: {
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
-    chunkSizeWarningLimit: 2000, // رفع حد التحذير إلى 2 ميجابايت
+    chunkSizeWarningLimit: 2000, // رفع الحد لتجنب التحذيرات
     rollupOptions: {
-      input: path.resolve(__dirname, "client/index.html"), // HTML الأساسي
+      input: path.resolve(__dirname, "client/index.html"),
       output: {
         manualChunks(id: string) {
+          // فصل مكتبات كبيرة بشكل منفصل لتقليل حجم الباندل الرئيسي
           if (id.includes("node_modules")) {
-            return "vendor"; // فصل كل المكتبات الخارجية في chunk واحد
+            if (id.includes("react")) return "react-vendor";
+            if (id.includes("openai")) return "openai-vendor";
+            return "vendor";
           }
         },
       },
