@@ -27,13 +27,13 @@ export default defineConfig(async () => ({
     },
   },
   root: path.resolve(__dirname, "client"),
-  base: "./", // مهم لتجنب مشاكل المسارات على السيرفر
+  base: "./", // مهم لتجنب مشاكل المسارات في السيرفر
   build: {
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
     chunkSizeWarningLimit: 2000, // رفع حد التحذير إلى 2 ميجابايت
     rollupOptions: {
-      input: path.resolve(__dirname, "client/index.html"), // ملف HTML الأساسي
+      input: path.resolve(__dirname, "client/index.html"), // HTML الأساسي
       output: {
         manualChunks(id: string) {
           if (id.includes("node_modules")) {
