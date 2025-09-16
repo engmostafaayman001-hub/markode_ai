@@ -1,8 +1,11 @@
 import type { Config } from "tailwindcss";
 
-export default {
+const config: Config = {
   darkMode: ["class"],
-  content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
+  content: [
+    "./client/index.html",
+    "./client/src/**/*.{js,jsx,ts,tsx}"
+  ],
   theme: {
     extend: {
       borderRadius: {
@@ -45,11 +48,11 @@ export default {
         input: "var(--input)",
         ring: "var(--ring)",
         chart: {
-          "1": "var(--chart-1)",
-          "2": "var(--chart-2)",
-          "3": "var(--chart-3)",
-          "4": "var(--chart-4)",
-          "5": "var(--chart-5)",
+          1: "var(--chart-1)",
+          2: "var(--chart-2)",
+          3: "var(--chart-3)",
+          4: "var(--chart-4)",
+          5: "var(--chart-5)",
         },
         sidebar: {
           DEFAULT: "var(--sidebar)",
@@ -69,56 +72,28 @@ export default {
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
         },
         fadeInUp: {
-          from: {
-            opacity: "0",
-            transform: "translateY(20px)",
-          },
-          to: {
-            opacity: "1",
-            transform: "translateY(0)",
-          },
+          from: { opacity: "0", transform: "translateY(20px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
         },
         slideInLeft: {
-          from: {
-            opacity: "0",
-            transform: "translateX(-20px)",
-          },
-          to: {
-            opacity: "1",
-            transform: "translateX(0)",
-          },
+          from: { opacity: "0", transform: "translateX(-20px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
         },
         pulse: {
-          "0%, 100%": {
-            opacity: "1",
-          },
-          "50%": {
-            opacity: "0.5",
-          },
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.5" },
         },
         spin: {
-          from: {
-            transform: "rotate(0deg)",
-          },
-          to: {
-            transform: "rotate(360deg)",
-          },
+          from: { transform: "rotate(0deg)" },
+          to: { transform: "rotate(360deg)" },
         },
       },
       animation: {
@@ -130,13 +105,18 @@ export default {
         spin: "spin 1s linear infinite",
       },
       backdropBlur: {
-        xs: '2px',
-        sm: '4px',
-        md: '12px',
-        lg: '16px',
-        xl: '24px',
+        xs: "2px",
+        sm: "4px",
+        md: "12px",
+        lg: "16px",
+        xl: "24px",
       },
     },
   },
-  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
-} satisfies Config;
+  plugins: [
+    require("tailwindcss-animate"),
+    require("@tailwindcss/typography"),
+  ],
+};
+
+export default config;
