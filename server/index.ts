@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import { createServer } from "http";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
@@ -42,7 +43,8 @@ app.use((req, res, next) => {
 
 (async () => {
   // تسجيل جميع Routes
-  const server = await registerRoutes(app);
+  const server = createServer(app);
+  await registerRoutes(app, server); // عدل registerRoutes لتقبل server إذا كنت تستخدم WebSocket
 
   // Middleware للأخطاء
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -50,7 +52,6 @@ app.use((req, res, next) => {
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    // فقط تسجيل الخطأ في السيرفر، لا ترفع الاستثناء لتجنب crash
     console.error(err);
   });
 
@@ -64,8 +65,8 @@ app.use((req, res, next) => {
   // إعداد المنفذ والمضيف
   const PORT = Number(process.env.PORT) || 5000;
 
-  server.listen(PORT, "0.0.0.0", () => {
+  // ✅ النسخة الصحيحة لاستماع السيرفر
+  server.listen({ port: PORT, host: "0.0.0.0" }, () => {
     console.log(`Server running at http://0.0.0.0:${PORT}`);
   });
-
 })();

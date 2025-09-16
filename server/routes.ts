@@ -1,14 +1,13 @@
 // server/routes.ts
 import type { Express, Request, Response } from "express";
-import { createServer } from "http";
-import { WebSocketServer } from "ws";
+import { createServer, Server as HttpServer } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import { setupAuth } from "./replitAuth";
 import { storage } from "./storage";
 import {
   insertProjectSchema,
   insertTemplateSchema,
   insertAnalyticsSchema,
-  type User,
 } from "@shared/schema";
 import OpenAI from "openai";
 
@@ -19,13 +18,13 @@ declare module "express-serve-static-core" {
   }
 }
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 if (!process.env.OPENAI_API_KEY) {
   throw new Error("Missing OPENAI_API_KEY environment variable");
 }
+
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 interface CodeResponse {
   success: boolean;
@@ -56,9 +55,7 @@ async function callOpenAI(prompt: string): Promise<CodeResponse> {
     });
     const rawOutput = completion.choices[0].message?.content ?? "";
     const parsed = safeJSONParse<CodeResponse>(rawOutput);
-
-    if (!parsed) return { success: false, error: "Failed to parse model output" };
-    return parsed;
+    return parsed ?? { success: false, error: "Failed to parse model output" };
   } catch (err: any) {
     return { success: false, error: err.message || "Unknown error" };
   }
@@ -67,50 +64,49 @@ async function callOpenAI(prompt: string): Promise<CodeResponse> {
 // ---------------- OpenAI API ----------------
 export async function generateCode(prompt: string): Promise<CodeResponse> {
   return callOpenAI(
-    `You are Markod AI, a professional code generator. 
-    Generate clean, production-ready code. 
-    Respond strictly in this JSON format:
-    {
-      "success": true,
-      "code": "...code here...",
-      "explanation": "Explain how this code works."
-    }
-    User request: ${prompt}`
+    `You are Markod AI, a professional code generator.
+Generate clean, production-ready code.
+Respond strictly in this JSON format:
+{
+  "success": true,
+  "code": "...code here...",
+  "explanation": "Explain how this code works."
+}
+User request: ${prompt}`
   );
 }
 
 export async function suggestImprovements(code: string): Promise<CodeResponse> {
   return callOpenAI(
-    `You are Markod AI, a senior code reviewer. 
-    Suggest clear improvements to the given code.
-    Respond strictly in this JSON format:
-    {
-      "success": true,
-      "suggestions": ["...", "..."],
-      "explanation": "Summarize why these changes matter."
-    }
-    Code:\n${code}`
+    `You are Markod AI, a senior code reviewer.
+Suggest clear improvements to the given code.
+Respond strictly in this JSON format:
+{
+  "success": true,
+  "suggestions": ["...", "..."],
+  "explanation": "Summarize why these changes matter."
+}
+Code:\n${code}`
   );
 }
 
 export async function fixCodeError(code: string, error: string): Promise<CodeResponse> {
   return callOpenAI(
-    `You are Markod AI, a debugging expert. 
-    Fix the error in the given code and explain the fix.
-    Respond strictly in this JSON format:
-    {
-      "success": true,
-      "code": "...corrected code...",
-      "explanation": "Explain what was wrong and how it was fixed."
-    }
-    Code:\n${code}
-    Error:\n${error}`
+    `You are Markod AI, a debugging expert.
+Fix the error in the given code and explain the fix.
+Respond strictly in this JSON format:
+{
+  "success": true,
+  "code": "...corrected code...",
+  "explanation": "Explain what was wrong and how it was fixed."
+}
+Code:\n${code}
+Error:\n${error}`
   );
 }
 
 // ---------------- Register Routes ----------------
-export async function registerRoutes(app: Express) {
-  // Set up authentication
+export async function registerRoutes(app: Express, server?: HttpServer) {
   await setupAuth(app);
 
   // -------- Users --------
@@ -120,7 +116,8 @@ export async function registerRoutes(app: Express) {
       const user = await storage.getUser(req.user.id);
       if (!user) return res.status(404).json({ message: "User not found" });
       res.json(user);
-    } catch {
+    } catch (err) {
+      console.error(err);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -130,7 +127,8 @@ export async function registerRoutes(app: Express) {
       const user = await storage.getUser(req.params.id);
       if (!user) return res.status(404).json({ message: "User not found" });
       res.json(user);
-    } catch {
+    } catch (err) {
+      console.error(err);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -142,7 +140,8 @@ export async function registerRoutes(app: Express) {
       if (!userId) return res.status(400).json({ message: "User ID required" });
       const projects = await storage.getProjectsByUser(userId);
       res.json(projects);
-    } catch {
+    } catch (err) {
+      console.error(err);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -152,7 +151,8 @@ export async function registerRoutes(app: Express) {
       const project = await storage.getProject(req.params.id);
       if (!project) return res.status(404).json({ message: "Project not found" });
       res.json(project);
-    } catch {
+    } catch (err) {
+      console.error(err);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -162,7 +162,8 @@ export async function registerRoutes(app: Express) {
       const validatedData = insertProjectSchema.parse(req.body);
       const project = await storage.createProject(validatedData);
       res.status(201).json(project);
-    } catch {
+    } catch (err) {
+      console.error(err);
       res.status(400).json({ message: "Invalid project data" });
     }
   });
@@ -171,7 +172,8 @@ export async function registerRoutes(app: Express) {
     try {
       const project = await storage.updateProject(req.params.id, req.body);
       res.json(project);
-    } catch {
+    } catch (err) {
+      console.error(err);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -180,7 +182,8 @@ export async function registerRoutes(app: Express) {
     try {
       await storage.deleteProject(req.params.id);
       res.status(204).send();
-    } catch {
+    } catch (err) {
+      console.error(err);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -191,7 +194,8 @@ export async function registerRoutes(app: Express) {
       const category = req.query.category as string;
       const templates = await storage.getTemplates(category);
       res.json(templates);
-    } catch {
+    } catch (err) {
+      console.error(err);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -201,7 +205,8 @@ export async function registerRoutes(app: Express) {
       const template = await storage.getTemplate(req.params.id);
       if (!template) return res.status(404).json({ message: "Template not found" });
       res.json(template);
-    } catch {
+    } catch (err) {
+      console.error(err);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -211,7 +216,8 @@ export async function registerRoutes(app: Express) {
       const validatedData = insertTemplateSchema.parse(req.body);
       const template = await storage.createTemplate(validatedData);
       res.status(201).json(template);
-    } catch {
+    } catch (err) {
+      console.error(err);
       res.status(400).json({ message: "Invalid template data" });
     }
   });
@@ -222,7 +228,8 @@ export async function registerRoutes(app: Express) {
       if (!req.user?.id) return res.status(401).json({ message: "Not authenticated" });
       const analytics = await storage.getUserAnalytics(req.user.id);
       res.json(analytics);
-    } catch {
+    } catch (err) {
+      console.error(err);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -231,7 +238,8 @@ export async function registerRoutes(app: Express) {
     try {
       const analytics = await storage.getProjectAnalytics(req.params.id);
       res.json(analytics);
-    } catch {
+    } catch (err) {
+      console.error(err);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -241,7 +249,8 @@ export async function registerRoutes(app: Express) {
       const validatedData = insertAnalyticsSchema.parse(req.body);
       const analytics = await storage.logAnalyticsEvent(validatedData);
       res.status(201).json(analytics);
-    } catch {
+    } catch (err) {
+      console.error(err);
       res.status(400).json({ message: "Invalid analytics data" });
     }
   });
@@ -253,7 +262,8 @@ export async function registerRoutes(app: Express) {
       if (!prompt) return res.status(400).json({ message: "Prompt is required" });
       const result = await generateCode(prompt);
       res.json(result);
-    } catch {
+    } catch (err) {
+      console.error(err);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -264,7 +274,8 @@ export async function registerRoutes(app: Express) {
       if (!code) return res.status(400).json({ message: "Code is required" });
       const result = await suggestImprovements(code);
       res.json(result);
-    } catch {
+    } catch (err) {
+      console.error(err);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -275,16 +286,17 @@ export async function registerRoutes(app: Express) {
       if (!code || !error) return res.status(400).json({ message: "Code and error are required" });
       const result = await fixCodeError(code, error);
       res.json(result);
-    } catch {
+    } catch (err) {
+      console.error(err);
       res.status(500).json({ message: "Internal server error" });
     }
   });
 
   // -------- WebSocket --------
-  const server = createServer(app);
-  const wss = new WebSocketServer({ server, path: "/ws" });
+  const serverInstance = server ?? createServer(app);
+  const wss = new WebSocketServer({ server: serverInstance, path: "/ws" });
 
-  wss.on("connection", (ws) => {
+  wss.on("connection", (ws: WebSocket) => {
     ws.on("message", (data) => {
       try {
         const message = JSON.parse(data.toString());
@@ -293,16 +305,16 @@ export async function registerRoutes(app: Express) {
           ws.send(JSON.stringify({ type: "joined", projectId: message.projectId }));
         } else if (message.type === "code_change") {
           wss.clients.forEach((client) => {
-            if (client !== ws && client.readyState === client.OPEN) {
+            if (client !== ws && client.readyState === WebSocket.OPEN) {
               client.send(JSON.stringify({ type: "code_change", data: message.data }));
             }
           });
         }
-      } catch (error) {
-        console.error("WebSocket message error:", error);
+      } catch (err) {
+        console.error("WebSocket message error:", err);
       }
     });
   });
 
-  return server;
+  return serverInstance;
 }
