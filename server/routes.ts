@@ -1,3 +1,9 @@
+import type { Express } from "express";
+import { createServer } from "http";
+import { WebSocketServer } from "ws";
+import { setupAuth } from "./replitAuth";
+import { storage } from "./storage";
+import { insertProjectSchema, insertTemplateSchema, insertCollaboratorSchema, insertAnalyticsSchema } from "@shared/schema";
 import OpenAI from "openai";
 
 const client = new OpenAI({
@@ -104,4 +110,185 @@ export async function fixCodeError(code: string, error: string): Promise<CodeRes
     Code:\n${code}
     Error:\n${error}`
   );
+}
+
+/**
+ * Register all Express routes and return HTTP server
+ */
+export async function registerRoutes(app: Express) {
+  // Set up authentication
+  await setupAuth(app);
+
+  // API Routes for users
+  app.get("/api/user/:id", async (req, res) => {
+    try {
+      const user = await storage.getUser(req.params.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // API Routes for projects
+  app.get("/api/projects", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      if (!userId) {
+        return res.status(400).json({ message: "User ID required" });
+      }
+      const projects = await storage.getProjectsByUser(userId);
+      res.json(projects);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/projects/:id", async (req, res) => {
+    try {
+      const project = await storage.getProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/projects", async (req, res) => {
+    try {
+      const validatedData = insertProjectSchema.parse(req.body);
+      const project = await storage.createProject(validatedData);
+      res.status(201).json(project);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid project data" });
+    }
+  });
+
+  app.put("/api/projects/:id", async (req, res) => {
+    try {
+      const project = await storage.updateProject(req.params.id, req.body);
+      res.json(project);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/projects/:id", async (req, res) => {
+    try {
+      await storage.deleteProject(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // API Routes for templates
+  app.get("/api/templates", async (req, res) => {
+    try {
+      const category = req.query.category as string;
+      const templates = await storage.getTemplates(category);
+      res.json(templates);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/templates/:id", async (req, res) => {
+    try {
+      const template = await storage.getTemplate(req.params.id);
+      if (!template) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      res.json(template);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/templates", async (req, res) => {
+    try {
+      const validatedData = insertTemplateSchema.parse(req.body);
+      const template = await storage.createTemplate(validatedData);
+      res.status(201).json(template);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid template data" });
+    }
+  });
+
+  // OpenAI API Routes
+  app.post("/api/generate-code", async (req, res) => {
+    try {
+      const { prompt } = req.body;
+      if (!prompt) {
+        return res.status(400).json({ message: "Prompt is required" });
+      }
+      const result = await generateCode(prompt);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/suggest-improvements", async (req, res) => {
+    try {
+      const { code } = req.body;
+      if (!code) {
+        return res.status(400).json({ message: "Code is required" });
+      }
+      const result = await suggestImprovements(code);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/fix-code", async (req, res) => {
+    try {
+      const { code, error } = req.body;
+      if (!code || !error) {
+        return res.status(400).json({ message: "Code and error are required" });
+      }
+      const result = await fixCodeError(code, error);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Create HTTP server
+  const server = createServer(app);
+
+  // Set up WebSocket server for real-time collaboration
+  const wss = new WebSocketServer({ server });
+  
+  wss.on('connection', (ws) => {
+    ws.on('message', (data) => {
+      try {
+        const message = JSON.parse(data.toString());
+        
+        if (message.type === 'join_project') {
+          // Handle project joining logic
+          ws.send(JSON.stringify({ type: 'joined', projectId: message.projectId }));
+        } else if (message.type === 'code_change') {
+          // Broadcast code changes to other clients
+          wss.clients.forEach((client) => {
+            if (client !== ws && client.readyState === client.OPEN) {
+              client.send(JSON.stringify({
+                type: 'code_change',
+                data: message.data
+              }));
+            }
+          });
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+      }
+    });
+  });
+
+  return server;
 }
