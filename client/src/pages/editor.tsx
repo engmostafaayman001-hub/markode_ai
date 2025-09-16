@@ -15,21 +15,46 @@ import AIAssistant from "@/components/editor/ai-assistant";
 import { Play, Save, Share, Bot, FileText, Eye } from "lucide-react";
 import { isUnauthorizedError } from "@/lib/authUtils";
 
+// ===== تعريف الواجهات =====
+interface ProjectFiles {
+  [filename: string]: string;
+}
+
+interface Project {
+  id?: string;
+  name: string;
+  description?: string;
+  files: ProjectFiles;
+}
+
 export default function Editor() {
   const { id } = useParams();
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [projectData, setProjectData] = useState({
+
+  // ===== useState مع النوع المحدد =====
+  const [projectData, setProjectData] = useState<Project>({
     name: "مشروع جديد",
     description: "",
-    files: { "index.html": "<!DOCTYPE html>\n<html>\n<head>\n    <title>مشروع جديد</title>\n</head>\n<body>\n    <h1>مرحبا بك في ماركود AI</h1>\n</body>\n</html>" }
+    files: {
+      "index.html": `<!DOCTYPE html>
+<html>
+<head>
+    <title>مشروع جديد</title>
+</head>
+<body>
+    <h1>مرحبا بك في ماركود AI</h1>
+</body>
+</html>`,
+    },
   });
-  const [activeFile, setActiveFile] = useState("index.html");
-  const [isAIOpen, setIsAIOpen] = useState(false);
+
+  const [activeFile, setActiveFile] = useState<string>("index.html");
+  const [isAIOpen, setIsAIOpen] = useState<boolean>(false);
   const wsRef = useRef<WebSocket | null>(null);
 
-  // Redirect to login if not authenticated
+  // ===== إعادة التوجيه عند عدم المصادقة =====
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast({
@@ -44,14 +69,14 @@ export default function Editor() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  // Load existing project if ID provided
-  const { data: project, isLoading: projectLoading } = useQuery({
+  // ===== جلب المشروع إذا كان موجودًا =====
+  const { data: project, isLoading: projectLoading } = useQuery<Project>({
     queryKey: ["/api/projects", id],
     enabled: !!id && isAuthenticated,
     retry: false,
   });
 
-  // Setup WebSocket for real-time collaboration
+  // ===== WebSocket للتعاون اللحظي =====
   useEffect(() => {
     if (!id || !isAuthenticated) return;
 
@@ -60,22 +85,24 @@ export default function Editor() {
     const socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
-      socket.send(JSON.stringify({
-        type: 'join_project',
-        projectId: id,
-        userId: user?.id
-      }));
+      socket.send(
+        JSON.stringify({
+          type: "join_project",
+          projectId: id,
+          userId: user?.id,
+        })
+      );
     };
 
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data);
-      if (message.type === 'code_change' && message.data) {
-        setProjectData(prev => ({
+      if (message.type === "code_change" && message.data) {
+        setProjectData((prev) => ({
           ...prev,
           files: {
             ...prev.files,
-            [message.data.filename]: message.data.content
-          }
+            [message.data.filename]: message.data.content,
+          },
         }));
       }
     };
@@ -84,29 +111,41 @@ export default function Editor() {
 
     return () => {
       if (socket) {
-        socket.send(JSON.stringify({
-          type: 'leave_project',
-          projectId: id
-        }));
+        socket.send(
+          JSON.stringify({
+            type: "leave_project",
+            projectId: id,
+          })
+        );
         socket.close();
       }
     };
   }, [id, isAuthenticated, user?.id]);
 
-  // Load project data
+  // ===== تحميل بيانات المشروع =====
   useEffect(() => {
     if (project) {
       setProjectData({
         name: project.name,
         description: project.description || "",
-        files: project.files || { "index.html": "<!DOCTYPE html>\n<html>\n<head>\n    <title>مشروع جديد</title>\n</head>\n<body>\n    <h1>مرحبا بك في ماركود AI</h1>\n</body>\n</html>" }
+        files: project.files || {
+          "index.html": `<!DOCTYPE html>
+<html>
+<head>
+    <title>مشروع جديد</title>
+</head>
+<body>
+    <h1>مرحبا بك في ماركود AI</h1>
+</body>
+</html>`,
+        },
       });
     }
   }, [project]);
 
-  // Save project mutation
+  // ===== حفظ المشروع =====
   const saveProjectMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: Project) => {
       if (id) {
         return await apiRequest("PUT", `/api/projects/${id}`, data);
       } else {
@@ -140,62 +179,70 @@ export default function Editor() {
     },
   });
 
+  // ===== تحديث الكود =====
   const handleCodeChange = (filename: string, content: string) => {
-    setProjectData(prev => ({
+    setProjectData((prev) => ({
       ...prev,
       files: {
         ...prev.files,
-        [filename]: content
-      }
+        [filename]: content,
+      },
     }));
 
-    // Send real-time update
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        type: 'code_change',
-        projectId: id,
-        data: { filename, content }
-      }));
+      wsRef.current.send(
+        JSON.stringify({
+          type: "code_change",
+          projectId: id,
+          data: { filename, content },
+        })
+      );
     }
   };
 
-  const handleSave = () => {
-    saveProjectMutation.mutate(projectData);
-  };
+  const handleSave = () => saveProjectMutation.mutate(projectData);
 
   const handleRunProject = () => {
     const htmlContent = projectData.files["index.html"] || "";
-    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const blob = new Blob([htmlContent], { type: "text/html" });
     const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
+    window.open(url, "_blank");
   };
 
   const handleNewFile = () => {
     const filename = prompt("اسم الملف الجديد:");
     if (filename && !projectData.files[filename]) {
-      const extension = filename.split('.').pop();
+      const extension = filename.split(".").pop();
       let content = "";
-      
+
       switch (extension) {
-        case 'js':
+        case "js":
           content = "// JavaScript file\nconsole.log('Hello, World!');";
           break;
-        case 'css':
+        case "css":
           content = "/* CSS file */\nbody {\n    font-family: Arial, sans-serif;\n}";
           break;
-        case 'html':
-          content = "<!DOCTYPE html>\n<html>\n<head>\n    <title>New Page</title>\n</head>\n<body>\n    <h1>New Page</h1>\n</body>\n</html>";
+        case "html":
+          content = `<!DOCTYPE html>
+<html>
+<head>
+    <title>New Page</title>
+</head>
+<body>
+    <h1>New Page</h1>
+</body>
+</html>`;
           break;
         default:
           content = "";
       }
 
-      setProjectData(prev => ({
+      setProjectData((prev) => ({
         ...prev,
         files: {
           ...prev.files,
-          [filename]: content
-        }
+          [filename]: content,
+        },
       }));
       setActiveFile(filename);
     }
@@ -204,47 +251,51 @@ export default function Editor() {
   if (isLoading || (id && projectLoading)) {
     return (
       <div className="h-screen flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" aria-label="Loading" data-testid="loading-spinner"/>
+        <div
+          className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"
+          aria-label="Loading"
+          data-testid="loading-spinner"
+        />
       </div>
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  if (!isAuthenticated) return null;
 
   const fileList = Object.keys(projectData.files);
 
   return (
     <div className="h-screen flex flex-col bg-background" data-testid="editor-page">
       <Header />
-      
+
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
         <div className="w-64 bg-card border-l border-border flex flex-col" data-testid="file-explorer">
           <div className="p-4 border-b border-border">
             <Input
               value={projectData.name}
-              onChange={(e) => setProjectData(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e) => setProjectData((prev) => ({ ...prev, name: e.target.value }))}
               className="font-semibold"
               data-testid="input-project-name"
             />
           </div>
-          
+
           <div className="flex-1 p-4">
             <div className="flex justify-between items-center mb-4">
-              <h4 className="font-semibold text-sm text-muted-foreground" data-testid="text-project-files">ملفات المشروع</h4>
+              <h4 className="font-semibold text-sm text-muted-foreground" data-testid="text-project-files">
+                ملفات المشروع
+              </h4>
               <Button variant="ghost" size="sm" onClick={handleNewFile} data-testid="button-new-file">
                 <FileText className="w-4 h-4" />
               </Button>
             </div>
-            
+
             <div className="space-y-1">
               {fileList.map((filename) => (
                 <div
                   key={filename}
                   className={`flex items-center text-sm py-2 px-3 rounded cursor-pointer transition-colors ${
-                    activeFile === filename ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                    activeFile === filename ? "bg-primary text-primary-foreground" : "hover:bg-muted"
                   }`}
                   onClick={() => setActiveFile(filename)}
                   data-testid={`file-${filename}`}
@@ -255,21 +306,21 @@ export default function Editor() {
               ))}
             </div>
           </div>
-          
+
           <div className="p-4 border-t border-border space-y-2">
             <Button onClick={handleSave} disabled={saveProjectMutation.isPending} className="w-full" data-testid="button-save">
               <Save className="w-4 h-4 ml-2" />
               {saveProjectMutation.isPending ? "جاري الحفظ..." : "حفظ"}
             </Button>
-            
+
             <Button onClick={handleRunProject} variant="outline" className="w-full" data-testid="button-run">
               <Play className="w-4 h-4 ml-2" />
               تشغيل
             </Button>
-            
-            <Button 
-              onClick={() => setIsAIOpen(true)} 
-              variant="secondary" 
+
+            <Button
+              onClick={() => setIsAIOpen(true)}
+              variant="secondary"
               className="w-full"
               data-testid="button-ai-assistant"
             >
@@ -284,7 +335,9 @@ export default function Editor() {
           {/* Editor Header */}
           <div className="bg-card px-6 py-4 border-b border-border flex items-center justify-between">
             <div className="flex items-center space-x-reverse space-x-4">
-              <span className="text-sm text-muted-foreground" data-testid="text-active-file">{activeFile}</span>
+              <span className="text-sm text-muted-foreground" data-testid="text-active-file">
+                {activeFile}
+              </span>
             </div>
             <div className="flex items-center space-x-reverse space-x-4">
               <Button variant="ghost" size="sm" data-testid="button-share">
@@ -303,7 +356,9 @@ export default function Editor() {
             <MonacoEditor
               value={projectData.files[activeFile] || ""}
               onChange={(content) => handleCodeChange(activeFile, content)}
-              language={activeFile.endsWith('.js') ? 'javascript' : activeFile.endsWith('.css') ? 'css' : 'html'}
+              language={
+                activeFile.endsWith(".js") ? "javascript" : activeFile.endsWith(".css") ? "css" : "html"
+              }
             />
           </div>
         </div>
@@ -311,8 +366,8 @@ export default function Editor() {
         {/* AI Assistant Panel */}
         {isAIOpen && (
           <div className="w-80 bg-card border-r border-border">
-            <AIAssistant 
-              onClose={() => setIsAIOpen(false)} 
+            <AIAssistant
+              onClose={() => setIsAIOpen(false)}
               onCodeGenerated={(code) => handleCodeChange(activeFile, code)}
             />
           </div>

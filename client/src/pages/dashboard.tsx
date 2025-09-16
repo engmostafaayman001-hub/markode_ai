@@ -10,7 +10,31 @@ import Footer from "@/components/layout/footer";
 import ProjectCard from "@/components/projects/project-card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Code, Eye, Edit, TrendingUp, Users, Calendar, Activity } from "lucide-react";
-import { isUnauthorizedError } from "@/lib/authUtils";
+
+// Types
+type ProjectFile = {
+  id: string;
+  name: string;
+  size?: number;
+  mimeType?: string;
+};
+
+type Project = {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  files: ProjectFile[];
+  isPublic: boolean;
+  createdAt: string;
+  updatedAt?: string;
+};
+
+type AnalyticsEvent = {
+  id: string;
+  event: 'create' | 'view' | 'edit';
+  createdAt: string;
+};
 
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -31,13 +55,14 @@ export default function Dashboard() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: projects, isLoading: projectsLoading } = useQuery({
+  // Queries
+  const { data: projects, isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
     enabled: isAuthenticated,
     retry: false,
   });
 
-  const { data: analytics, isLoading: analyticsLoading } = useQuery({
+  const { data: analytics, isLoading: analyticsLoading } = useQuery<AnalyticsEvent[]>({
     queryKey: ["/api/analytics/user"],
     enabled: isAuthenticated,
     retry: false,
@@ -51,15 +76,13 @@ export default function Dashboard() {
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  if (!isAuthenticated) return null;
 
   // Process analytics data
   const totalProjects = projects?.length || 0;
-  const totalViews = analytics?.filter((a: any) => a.event === 'view').length || 0;
-  const totalEdits = analytics?.filter((a: any) => a.event === 'edit').length || 0;
-  const totalCreates = analytics?.filter((a: any) => a.event === 'create').length || 0;
+  const totalViews = analytics?.filter(a => a.event === 'view').length || 0;
+  const totalEdits = analytics?.filter(a => a.event === 'edit').length || 0;
+  const totalCreates = analytics?.filter(a => a.event === 'create').length || 0;
 
   // Chart data
   const activityData = [
@@ -81,7 +104,6 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background" data-testid="dashboard-page">
       <Header />
-      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -144,6 +166,7 @@ export default function Dashboard() {
           </Card>
         </div>
 
+        {/* Tabs */}
         <Tabs defaultValue="overview" className="space-y-6" data-testid="dashboard-tabs">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview" data-testid="tab-overview">نظرة عامة</TabsTrigger>
@@ -151,6 +174,7 @@ export default function Dashboard() {
             <TabsTrigger value="analytics" data-testid="tab-analytics">التحليلات</TabsTrigger>
           </TabsList>
 
+          {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6" data-testid="content-overview">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Weekly Activity Chart */}
@@ -229,8 +253,8 @@ export default function Dashboard() {
                   </div>
                 ) : analytics && analytics.length > 0 ? (
                   <div className="space-y-3">
-                    {analytics.slice(0, 5).map((activity: any, index: number) => (
-                      <div key={activity.id} className="flex items-center space-x-reverse space-x-3 p-3 rounded-lg hover:bg-muted/50" data-testid={`activity-item-${index}`}>
+                    {analytics.slice(0, 5).map((activity) => (
+                      <div key={activity.id} className="flex items-center space-x-reverse space-x-3 p-3 rounded-lg hover:bg-muted/50">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                           activity.event === 'create' ? 'bg-blue-100 text-blue-600' :
                           activity.event === 'view' ? 'bg-green-100 text-green-600' :
@@ -241,12 +265,12 @@ export default function Dashboard() {
                            <Edit className="w-4 h-4" />}
                         </div>
                         <div className="flex-1">
-                          <p className="font-medium" data-testid={`activity-description-${index}`}>
+                          <p className="font-medium">
                             {activity.event === 'create' ? 'تم إنشاء مشروع جديد' :
                              activity.event === 'view' ? 'تم عرض مشروع' :
                              'تم تعديل مشروع'}
                           </p>
-                          <p className="text-sm text-muted-foreground" data-testid={`activity-date-${index}`}>
+                          <p className="text-sm text-muted-foreground">
                             {new Date(activity.createdAt).toLocaleDateString('ar-EG')}
                           </p>
                         </div>
@@ -254,20 +278,21 @@ export default function Dashboard() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8" data-testid="no-activity">
+                  <div className="text-center py-8">
                     <Activity className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2" data-testid="no-activity-title">لا توجد نشاطات بعد</h3>
-                    <p className="text-muted-foreground" data-testid="no-activity-description">ابدأ بإنشاء مشاريع جديدة لرؤية النشاطات هنا</p>
+                    <h3 className="text-lg font-semibold mb-2">لا توجد نشاطات بعد</h3>
+                    <p className="text-muted-foreground">ابدأ بإنشاء مشاريع جديدة لرؤية النشاطات هنا</p>
                   </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="projects" className="space-y-6" data-testid="content-projects">
+          {/* Projects Tab */}
+          <TabsContent value="projects" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold" data-testid="projects-section-title">جميع المشاريع</h2>
-              <Button onClick={() => window.location.href = '/editor'} data-testid="button-new-project">
+              <h2 className="text-2xl font-bold">جميع المشاريع</h2>
+              <Button onClick={() => window.location.href = '/editor'}>
                 مشروع جديد
               </Button>
             </div>
@@ -275,7 +300,7 @@ export default function Dashboard() {
             {projectsLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <Card key={i} className="animate-pulse" data-testid={`project-skeleton-${i}`}>
+                  <Card key={i} className="animate-pulse">
                     <CardContent className="p-6">
                       <div className="h-6 bg-muted rounded mb-4"></div>
                       <div className="h-4 bg-muted rounded mb-2"></div>
@@ -286,17 +311,28 @@ export default function Dashboard() {
               </div>
             ) : projects && projects.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {projects.map((project: any) => (
-                  <ProjectCard key={project.id} project={project} />
+                {projects.map(project => (
+                  <ProjectCard
+                 key={project.id}
+                 project={{
+                 ...project,
+                 updatedAt: project.updatedAt || project.createdAt, // ضمان أن يكون string
+                 files: project.files.reduce((acc, file) => {
+                 acc[file.name] = file.name; // أو أي حقل موجود في ProjectFile
+                 return acc;
+                 }, {} as Record<string, string>)
+                 }}
+                 />
+
                 ))}
               </div>
             ) : (
-              <Card data-testid="no-projects">
+              <Card>
                 <CardContent className="p-8 text-center">
                   <Code className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2" data-testid="no-projects-title">لا توجد مشاريع بعد</h3>
-                  <p className="text-muted-foreground mb-4" data-testid="no-projects-description">ابدأ مشروعك الأول الآن!</p>
-                  <Button onClick={() => window.location.href = '/editor'} data-testid="button-create-first-project">
+                  <h3 className="text-lg font-semibold mb-2">لا توجد مشاريع بعد</h3>
+                  <p className="text-muted-foreground mb-4">ابدأ مشروعك الأول الآن!</p>
+                  <Button onClick={() => window.location.href = '/editor'}>
                     إنشاء مشروع جديد
                   </Button>
                 </CardContent>
@@ -304,11 +340,12 @@ export default function Dashboard() {
             )}
           </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-6" data-testid="content-analytics">
+          {/* Analytics Tab */}
+          <TabsContent value="analytics" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card data-testid="chart-project-performance">
+              <Card>
                 <CardHeader>
-                  <CardTitle data-testid="chart-performance-title">أداء المشاريع</CardTitle>
+                  <CardTitle>أداء المشاريع</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
@@ -323,9 +360,9 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card data-testid="chart-engagement">
+              <Card>
                 <CardHeader>
-                  <CardTitle data-testid="chart-engagement-title">معدل التفاعل</CardTitle>
+                  <CardTitle>معدل التفاعل</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
@@ -343,7 +380,6 @@ export default function Dashboard() {
           </TabsContent>
         </Tabs>
       </div>
-
       <Footer />
     </div>
   );

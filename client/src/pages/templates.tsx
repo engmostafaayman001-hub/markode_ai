@@ -43,7 +43,7 @@ export default function Templates() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: templates, isLoading: templatesLoading } = useQuery({
+  const { data: templates = [], isLoading: templatesLoading } = useQuery<any[]>({
     queryKey: ["/api/templates", selectedCategory === "all" ? undefined : selectedCategory],
     enabled: isAuthenticated,
     retry: false,
