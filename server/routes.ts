@@ -262,8 +262,8 @@ export async function registerRoutes(app: Express) {
   // Create HTTP server
   const server = createServer(app);
 
-  // Set up WebSocket server for real-time collaboration
-  const wss = new WebSocketServer({ server });
+  // Set up WebSocket server for real-time collaboration on dedicated path
+  const wss = new WebSocketServer({ server, path: "/ws" });
   
   wss.on('connection', (ws) => {
     ws.on('message', (data) => {
