@@ -3,37 +3,38 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
-export default defineConfig({
+// Helper to conditionally import Replit plugins in dev
+const replitPlugins = async () => {
+  if (process.env.NODE_ENV !== "production" && process.env.REPL_ID !== undefined) {
+    const cartographer = (await import("@replit/vite-plugin-cartographer")).cartographer();
+    const devBanner = (await import("@replit/vite-plugin-dev-banner")).devBanner();
+    return [cartographer, devBanner];
+  }
+  return [];
+};
+
+export default defineConfig(async () => ({
   plugins: [
     react(),
     runtimeErrorOverlay(),
-    ...(process.env.NODE_ENV !== "production" &&
-    process.env.REPL_ID !== undefined
-      ? [
-          await import("@replit/vite-plugin-cartographer").then((m) =>
-            m.cartographer(),
-          ),
-          await import("@replit/vite-plugin-dev-banner").then((m) =>
-            m.devBanner(),
-          ),
-        ]
-      : []),
+    ...(await replitPlugins()),
   ],
   resolve: {
     alias: {
-      "@": path.resolve(import.meta.dirname, "client", "src"),
-      "@shared": path.resolve(import.meta.dirname, "shared"),
-      "@assets": path.resolve(import.meta.dirname, "attached_assets"),
+      "@": path.resolve(__dirname, "client/src"),
+      "@shared": path.resolve(__dirname, "shared"),
+      "@assets": path.resolve(__dirname, "attached_assets"),
     },
   },
-  root: path.resolve(import.meta.dirname, "client"),
+  root: path.resolve(__dirname, "client"),
   build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
     chunkSizeWarningLimit: 2000, // رفع حد التحذير إلى 2 ميجابايت
     rollupOptions: {
+      input: path.resolve(__dirname, "client/index.html"), // تحديد ملف الـ HTML الأساسي
       output: {
-        manualChunks(id) {
+        manualChunks(id: string) {
           if (id.includes("node_modules")) {
             return "vendor"; // فصل كل المكتبات الخارجية في chunk واحد
           }
@@ -47,4 +48,4 @@ export default defineConfig({
       deny: ["**/.*"],
     },
   },
-});
+}));
