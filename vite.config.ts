@@ -1,3 +1,4 @@
+// vite.config.ts
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
@@ -37,7 +38,7 @@ export default defineConfig(async () => ({
       output: {
         manualChunks(id: string) {
           if (id.includes("node_modules")) {
-            return "vendor"; // فصل المكتبات الخارجية في chunk واحد
+            return "vendor"; // فصل كل المكتبات الخارجية في chunk واحد
           }
         },
       },
