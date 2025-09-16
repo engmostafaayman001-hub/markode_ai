@@ -30,6 +30,16 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    chunkSizeWarningLimit: 2000, // رفع حد التحذير إلى 2 ميجابايت
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            return "vendor"; // فصل كل المكتبات الخارجية في chunk واحد
+          }
+        },
+      },
+    },
   },
   server: {
     fs: {
