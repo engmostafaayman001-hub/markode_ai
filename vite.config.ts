@@ -7,18 +7,25 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default defineConfig({
-  root: path.resolve(__dirname, "client"), // مجلد العميل
-  base: "./", // مهم لتشغيل التطبيق على Render بشكل صحيح
+  // مجلد المشروع الخاص بالعميل
+  root: path.resolve(__dirname, "client"),
+  
+  // قاعدة الروابط (ضرورية للبناء على Render)
+  base: "./",
+
   plugins: [react()],
+
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "client/src"),
       "@shared": path.resolve(__dirname, "shared"),
     },
   },
+
   build: {
-    outDir: path.resolve(__dirname, "dist/client"), // مجلد إنتاج الواجهة
-    emptyOutDir: true, // مسح الملفات القديمة قبل البناء
+    // مكان إنتاج الملفات بعد البناء
+    outDir: path.resolve(__dirname, "dist/client"),
+    emptyOutDir: true,
     rollupOptions: {
       input: path.resolve(__dirname, "client/index.html"),
       output: {
@@ -28,21 +35,26 @@ export default defineConfig({
       },
     },
   },
+
   server: {
+    // منفذ تشغيل Vite dev server
     port: 5173,
-    proxy:
-      process.env.NODE_ENV === "development"
-        ? {
-            "/api": {
-              target: "http://localhost:5000",
-              changeOrigin: true,
-              secure: false,
-            },
-            "/ws": {
-              target: "ws://localhost:5000",
-              ws: true,
-            },
-          }
-        : undefined,
+
+    // إعدادات HMR (Hot Module Replacement)
+    hmr: {
+      host: "127.0.0.1",
+      port: 5173,
+    },
+
+    // proxy لإعادة توجيه طلبات API إلى backend
+    proxy: {
+      "/api": "http://localhost:5000",
+    },
+  },
+
+  define: {
+    // لمنع أخطاء process.env و global في الكود العميل
+    "process.env": {},
+    global: undefined,
   },
 });

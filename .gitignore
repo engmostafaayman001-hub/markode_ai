@@ -18,4 +18,11 @@ vite.config.ts.*
 *.tar.gz
 
 # Force LF line endings for text files
-* text eol=lf
+# (يتأكد أن جميع الملفات النصية تستخدم LF في Git)
+* text=auto
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+.gitignore text eol=lf
