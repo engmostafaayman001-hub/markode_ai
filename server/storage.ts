@@ -14,8 +14,8 @@ import {
   type InsertCollaborator,
   type Analytics,
   type InsertAnalytics,
-} from "@shared/schema";
-import { db } from "./db";
+} from "@shared/schema.ts";
+import { db } from "./db.ts";
 import { eq, desc, and, or, ilike, sql } from "drizzle-orm";
 
 // Interface for storage operations

@@ -1,13 +1,13 @@
 import { useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth.ts";
+import { useToast } from "@/hooks/use-toast.ts";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import Header from "@/components/layout/header";
-import Footer from "@/components/layout/footer";
-import ProjectCard from "@/components/projects/project-card";
+import { Card, CardContent } from "@/components/ui/card.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import Header from "@/components/layout/header.tsx";
+import Footer from "@/components/layout/footer.tsx";
+import ProjectCard from "@/components/projects/project-card.tsx";
 import { Code, Plus, BarChart3, Users, Zap } from "lucide-react";
 
 interface Project {

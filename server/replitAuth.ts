@@ -16,7 +16,7 @@ export function getSession() {
   });
 
   return session({
-    secret: process.env.SESSION_SECRET || "أي_سلسلة_عشوائية_لتأمين_جلسات_Express",
+    secret: process.env.SESSION_SECRET || "mostafaayman01090886364_Express",
     store: sessionStore,
     resave: false,
     saveUninitialized: false,

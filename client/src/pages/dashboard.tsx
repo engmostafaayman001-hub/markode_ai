@@ -1,13 +1,13 @@
 import { useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth.ts";
+import { useToast } from "@/hooks/use-toast.ts";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Header from "@/components/layout/header";
-import Footer from "@/components/layout/footer";
-import ProjectCard from "@/components/projects/project-card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs.tsx";
+import Header from "@/components/layout/header.tsx";
+import Footer from "@/components/layout/footer.tsx";
+import ProjectCard from "@/components/projects/project-card.tsx";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Code, Eye, Edit, TrendingUp, Users, Calendar, Activity } from "lucide-react";
 

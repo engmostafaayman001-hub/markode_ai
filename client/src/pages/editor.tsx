@@ -1,19 +1,19 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "wouter";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth.ts";
+import { useToast } from "@/hooks/use-toast.ts";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Header from "@/components/layout/header";
-import MonacoEditor from "@/components/editor/monaco-editor";
-import AIAssistant from "@/components/editor/ai-assistant";
+import { apiRequest } from "@/lib/queryClient.ts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import { Input } from "@/components/ui/input.tsx";
+import { Textarea } from "@/components/ui/textarea.tsx";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs.tsx";
+import Header from "@/components/layout/header.tsx";
+import MonacoEditor from "@/components/editor/monaco-editor.tsx";
+import AIAssistant from "@/components/editor/ai-assistant.tsx";
 import { Play, Save, Share, Bot, FileText, Eye } from "lucide-react";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { isUnauthorizedError } from "@/lib/authUtils.ts";
 
 // ===== تعريف الواجهات =====
 interface ProjectFiles {

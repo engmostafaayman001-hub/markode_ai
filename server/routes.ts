@@ -2,14 +2,31 @@
 import type { Express, Request, Response } from "express";
 import { createServer, Server as HttpServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import { setupAuth } from "./replitAuth";
-import { storage } from "./storage";
+import { setupAuth } from "./replitAuth.ts";
+import { storage } from "./storage.ts";
+
 import {
+  users,
+  sessions,
+  projects,
+  templates,
+  collaborators,
+  analytics,
   insertProjectSchema,
   insertTemplateSchema,
+  insertCollaboratorSchema,
   insertAnalyticsSchema,
-} from "@shared/schema";
+  UpsertUser,
+  User,
+  Project,
+  Template,
+  Collaborator,
+  Analytics  
+} from '../shared/schema.js';
+
+
 import OpenAI from "openai";
+
 
 // --- Extend Express Request type to include `user` ---
 declare module "express-serve-static-core" {
@@ -291,6 +308,8 @@ export async function registerRoutes(app: Express, server?: HttpServer) {
       res.status(500).json({ message: "Internal server error" });
     }
   });
+
+  
 
   // -------- WebSocket --------
   const serverInstance = server ?? createServer(app);

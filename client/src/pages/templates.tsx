@@ -1,15 +1,15 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth.ts";
+import { useToast } from "@/hooks/use-toast.ts";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import Header from "@/components/layout/header";
-import Footer from "@/components/layout/footer";
-import TemplateCard from "@/components/templates/template-card";
+import { apiRequest } from "@/lib/queryClient.ts";
+import { Button } from "@/components/ui/button.tsx";
+import { Input } from "@/components/ui/input.tsx";
+import Header from "@/components/layout/header.tsx";
+import Footer from "@/components/layout/footer.tsx";
+import TemplateCard from "@/components/templates/template-card.tsx";
 import { Search, Filter } from "lucide-react";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { isUnauthorizedError } from "@/lib/authUtils.ts";
 import { useEffect } from "react";
 
 const categories = [

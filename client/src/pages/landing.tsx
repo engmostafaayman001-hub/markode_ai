@@ -1,7 +1,7 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import Header from "@/components/layout/header";
-import Footer from "@/components/layout/footer";
+import { Card, CardContent } from "@/components/ui/card.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import Header from "@/components/layout/header.tsx";
+import Footer from "@/components/layout/footer.tsx";
 import { Code, Users, Bolt, Brain, Palette, Shield } from "lucide-react";
 
 export default function Landing() {

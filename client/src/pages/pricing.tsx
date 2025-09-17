@@ -1,20 +1,24 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import Header from "@/components/layout/header";
-import Footer from "@/components/layout/footer";
+import { useAuth } from "@/hooks/useAuth.ts";
+import { useToast } from "@/hooks/use-toast.ts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import Header from "@/components/layout/header.tsx";
+import Footer from "@/components/layout/footer.tsx";
 import { Check, Crown, Code, Palette, User, CreditCard } from "lucide-react";
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useEffect } from "react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient.ts";
 
-if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
-  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
+// client/src/pages/pricing.tsx
+const stripeKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+
+if (!stripeKey) {
+  throw new Error("Stripe public key is missing! Set VITE_STRIPE_PUBLIC_KEY in Render env.");
 }
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+
+const stripePromise = loadStripe(stripeKey);
 
 const plans = [
   {
