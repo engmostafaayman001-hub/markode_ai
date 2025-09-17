@@ -2,14 +2,14 @@ import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
 import { createServer as createViteServer, createLogger } from "vite";
-import { type Server } from "http";
-import viteConfig from "../vite.config.ts";
 import { nanoid } from "nanoid";
 import { fileURLToPath } from "url";
 
+// إعداد __dirname و __filename
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Logger عام
 const viteLogger = createLogger();
 
 export function log(message: string, source = "express") {
@@ -19,11 +19,11 @@ export function log(message: string, source = "express") {
     second: "2-digit",
     hour12: true,
   });
-
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
-export async function setupVite(app: Express, server: Server) {
+// إعداد Vite في وضع التطوير (middleware)
+export async function setupVite(app: Express, server: any) {
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
@@ -31,41 +31,41 @@ export async function setupVite(app: Express, server: Server) {
   };
 
   const vite = await createViteServer({
-    ...viteConfig,
-    configFile: false,
+    root: path.resolve(__dirname, ".."), // جذر المشروع
+    configFile: path.resolve(__dirname, "../vite.config.js"),
+    server: serverOptions,
+    appType: "custom",
     customLogger: {
       ...viteLogger,
       error: (msg, options) => {
         viteLogger.error(msg, options);
-        process.exit(1);
+        process.exit(1); // أي خطأ في Vite يوقف السيرفر
       },
     },
-    server: serverOptions,
-    appType: "custom",
   });
 
   app.use(vite.middlewares);
 
-  // التعامل مع جميع الطلبات لصفحة index.html
+  // fallback لجميع الطلبات
   app.use("*", async (req, res, next) => {
-    const url = req.originalUrl;
-
     try {
-      const clientTemplate = path.resolve(
-        __dirname,
-        "..",
-        "client",
-        "index.html"
-      );
+      const templatePath = path.resolve(__dirname, "..", "client", "index.html");
+      let template: string;
 
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
+      try {
+        template = await fs.promises.readFile(templatePath, "utf-8");
+      } catch (err) {
+        return next(new Error(`❌ Could not read index.html: ${err}`));
+      }
+
+      // إضافة نسخة عشوائية لمنع caching أثناء التطوير
       template = template.replace(
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`
       );
 
-      const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+      const html = await vite.transformIndexHtml(req.originalUrl, template);
+      res.status(200).set({ "Content-Type": "text/html" }).end(html);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
       next(e);
@@ -73,8 +73,8 @@ export async function setupVite(app: Express, server: Server) {
   });
 }
 
+// خدمة الملفات الثابتة بعد build
 export function serveStatic(app: Express) {
-  // 👇 صححنا المسار ليطابق outDir
   const distPath = path.resolve(__dirname, "../dist/client");
 
   if (!fs.existsSync(distPath)) {
@@ -85,7 +85,7 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath));
 
-  // fall through to index.html if the file doesn't exist
+  // fallback لجميع الطلبات
   app.use("*", (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"));
   });

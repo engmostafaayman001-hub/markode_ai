@@ -1,10 +1,9 @@
 // server/routes.ts
 import type { Express, Request, Response } from "express";
-import { createServer, Server as HttpServer } from "http";
+import { createServer, type Server as HttpServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import { setupAuth } from "./replitAuth.ts";
-import { storage } from "./storage.ts";
-
+import { setupAuth } from "./replitAuth.js";
+import { storage } from "./storage.js";
 import {
   users,
   sessions,
@@ -21,27 +20,23 @@ import {
   Project,
   Template,
   Collaborator,
-  Analytics  
-} from '../shared/schema.js';
-
-
+  Analytics
+} from "../shared/schema.js";
 import OpenAI from "openai";
 
-
-// --- Extend Express Request type to include `user` ---
+// ---------------- Extend Express Request ----------------
 declare module "express-serve-static-core" {
   interface Request {
     user?: { id: string; [key: string]: any };
   }
 }
 
+// ---------------- OpenAI Client ----------------
 if (!process.env.OPENAI_API_KEY) {
   throw new Error("Missing OPENAI_API_KEY environment variable");
 }
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 interface CodeResponse {
   success: boolean;
@@ -78,10 +73,9 @@ async function callOpenAI(prompt: string): Promise<CodeResponse> {
   }
 }
 
-// ---------------- OpenAI API ----------------
+// ---------------- OpenAI APIs ----------------
 export async function generateCode(prompt: string): Promise<CodeResponse> {
-  return callOpenAI(
-    `You are Markod AI, a professional code generator.
+  return callOpenAI(`You are Markod AI, a professional code generator.
 Generate clean, production-ready code.
 Respond strictly in this JSON format:
 {
@@ -89,13 +83,11 @@ Respond strictly in this JSON format:
   "code": "...code here...",
   "explanation": "Explain how this code works."
 }
-User request: ${prompt}`
-  );
+User request: ${prompt}`);
 }
 
 export async function suggestImprovements(code: string): Promise<CodeResponse> {
-  return callOpenAI(
-    `You are Markod AI, a senior code reviewer.
+  return callOpenAI(`You are Markod AI, a senior code reviewer.
 Suggest clear improvements to the given code.
 Respond strictly in this JSON format:
 {
@@ -103,13 +95,11 @@ Respond strictly in this JSON format:
   "suggestions": ["...", "..."],
   "explanation": "Summarize why these changes matter."
 }
-Code:\n${code}`
-  );
+Code:\n${code}`);
 }
 
 export async function fixCodeError(code: string, error: string): Promise<CodeResponse> {
-  return callOpenAI(
-    `You are Markod AI, a debugging expert.
+  return callOpenAI(`You are Markod AI, a debugging expert.
 Fix the error in the given code and explain the fix.
 Respond strictly in this JSON format:
 {
@@ -118,8 +108,7 @@ Respond strictly in this JSON format:
   "explanation": "Explain what was wrong and how it was fixed."
 }
 Code:\n${code}
-Error:\n${error}`
-  );
+Error:\n${error}`);
 }
 
 // ---------------- Register Routes ----------------
@@ -309,8 +298,6 @@ export async function registerRoutes(app: Express, server?: HttpServer) {
     }
   });
 
-  
-
   // -------- WebSocket --------
   const serverInstance = server ?? createServer(app);
   const wss = new WebSocketServer({ server: serverInstance, path: "/ws" });
@@ -319,7 +306,6 @@ export async function registerRoutes(app: Express, server?: HttpServer) {
     ws.on("message", (data) => {
       try {
         const message = JSON.parse(data.toString());
-
         if (message.type === "join_project") {
           ws.send(JSON.stringify({ type: "joined", projectId: message.projectId }));
         } else if (message.type === "code_change") {
