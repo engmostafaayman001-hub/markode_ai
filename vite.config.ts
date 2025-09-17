@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 
 export default defineConfig({
   root: path.resolve(__dirname, "client"), // مجلد العميل
-  base: "./", // مهم عشان التحزيم يشتغل بشكل صحيح في Render
+  base: "./", // مهم لتشغيل التطبيق على Render بشكل صحيح
   plugins: [react()],
   resolve: {
     alias: {
