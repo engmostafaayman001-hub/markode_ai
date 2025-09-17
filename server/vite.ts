@@ -7,7 +7,6 @@ import viteConfig from "../vite.config.ts";
 import { nanoid } from "nanoid";
 import { fileURLToPath } from "url";
 
-// تحويل import.meta.url إلى __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -59,7 +58,6 @@ export async function setupVite(app: Express, server: Server) {
         "index.html"
       );
 
-      // إعادة تحميل index.html من القرص عند كل طلب
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
         `src="/src/main.tsx"`,
@@ -76,11 +74,12 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(__dirname, "public");
+  // 👇 صححنا المسار ليطابق outDir
+  const distPath = path.resolve(__dirname, "../dist/client");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`
+      `❌ Could not find the build directory: ${distPath}. Run "npm run build" first.`
     );
   }
 

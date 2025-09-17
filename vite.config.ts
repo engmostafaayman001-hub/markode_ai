@@ -8,27 +8,28 @@ const __dirname = path.dirname(__filename);
 
 export default defineConfig({
   root: path.resolve(__dirname, "client"), // مجلد العميل
-  base: "./",
+  base: "./", // مهم عشان التحزيم يشتغل بشكل صحيح في Render
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "client/src"), // اختصار للمجلد src
+      "@": path.resolve(__dirname, "client/src"),
+      "@shared": path.resolve(__dirname, "shared"),
     },
   },
   build: {
-    outDir: path.resolve(__dirname, "dist/public"), // ملفات الإنتاج
+    outDir: path.resolve(__dirname, "dist/client"), // مجلد إنتاج الواجهة
     emptyOutDir: true,
     rollupOptions: {
       input: path.resolve(__dirname, "client/index.html"),
       output: {
         manualChunks(id: string) {
-          if (id.includes("node_modules")) return "vendor"; // فصل مكتبات الطرف الثالث
+          if (id.includes("node_modules")) return "vendor";
         },
       },
     },
   },
   server: {
-    port: 5173, // منفذ التطوير
+    port: 5173,
     proxy:
       process.env.NODE_ENV === "development"
         ? {
@@ -42,6 +43,6 @@ export default defineConfig({
               ws: true,
             },
           }
-        : undefined, // في الإنتاج لا نحتاج proxy
+        : undefined,
   },
 });
