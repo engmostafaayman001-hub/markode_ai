@@ -18,7 +18,7 @@ export default defineConfig({
   },
   build: {
     outDir: path.resolve(__dirname, "dist/client"), // مجلد إنتاج الواجهة
-    emptyOutDir: true,
+    emptyOutDir: true, // مسح الملفات القديمة قبل البناء
     rollupOptions: {
       input: path.resolve(__dirname, "client/index.html"),
       output: {
