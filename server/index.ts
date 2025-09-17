@@ -80,8 +80,11 @@ app.use((req, res, next) => {
 
   // إعداد المنفذ
   const PORT = Number(process.env.PORT) || 5000;
-  server.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
-    console.log(`📦 Version: ${pkgJson.version || "unknown"}`);
-  });
+const HOST = "0.0.0.0";
+
+server.listen(PORT, HOST, () => {
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
+  console.log(`📦 Version: ${pkgJson.version || "unknown"}`);
+});
+
 })();

@@ -1,7 +1,21 @@
-.env
+# Node modules
 node_modules
+
+# Build output
 dist
+
+# Environment files
+.env
+
+# MacOS
 .DS_Store
+
+# Vite public or config files
 server/public
 vite.config.ts.*
+
+# Archives
 *.tar.gz
+
+# Force LF line endings for text files
+* text eol=lf
