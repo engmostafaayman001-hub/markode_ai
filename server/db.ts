@@ -15,7 +15,10 @@ if (!process.env.DATABASE_URL) {
 }
 
 // إنشاء Pool للاتصال بقاعدة البيانات
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  // SSL يكون مفعل تلقائيًا مع Neon
+});
 
 // تهيئة Drizzle ORM مع Pool والمخطط (schema)
 export const db = drizzle({

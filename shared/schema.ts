@@ -28,9 +28,6 @@ export const sessions = pgTable(
 
 // User roles enum
 export const userRoleEnum = pgEnum('user_role', ['admin', 'executive', 'developer', 'designer', 'trial']);
-
-// User storage table.
-// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email").unique(),
@@ -44,6 +41,19 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Templates table
+export const templates = pgTable("templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  category: varchar("category").notNull(),
+  previewImage: varchar("preview_image"),
+  files: jsonb("files").$type<any>().notNull().default(sql`'{}'::jsonb`),
+  downloads: integer("downloads").default(0),
+  isPremium: boolean("is_premium").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Projects table
 export const projects = pgTable("projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -51,24 +61,11 @@ export const projects = pgTable("projects", {
   description: text("description"),
   userId: varchar("user_id").notNull().references(() => users.id),
   templateId: varchar("template_id").references(() => templates.id),
-  files: jsonb("files").$type<Record<string, string>>().default({}),
+  files: jsonb("files").$type<any>().notNull().default(sql`'{}'::jsonb`),
   isPublic: boolean("is_public").default(false),
   deployUrl: varchar("deploy_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Templates table
-export const templates = pgTable("templates", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: varchar("name").notNull(),
-  description: text("description"),
-  category: varchar("category").notNull(), // 'business', 'ecommerce', 'blog', 'dashboard'
-  previewImage: varchar("preview_image"),
-  files: jsonb("files").$type<Record<string, string>>().notNull(),
-  downloads: integer("downloads").default(0),
-  isPremium: boolean("is_premium").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Collaborators table for real-time collaboration
